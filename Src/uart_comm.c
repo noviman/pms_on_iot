@@ -10,12 +10,13 @@ HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef * handle, const char * me
 {
     size_t length;
     length = strlen(message);
-    HAL_UART_Transmit_DMA(handle, (uint8_t *) message, (uint16_t) length); // Rozpoczecie nadawania danych z wykorzystaniem przerwan
+    HAL_UART_Transmit_DMA(handle, (uint8_t *) message, (uint16_t) length);
 }
 
 // Interruptions
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    uart_send_message(&PC_COMM_UART,  pm_sensor_receive);
+//    uart_send_message(&PC_COMM_UART,  pm_sensor_receive);
+    sensor_new_data_flag = 1;
     HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_receive, 32);
 }

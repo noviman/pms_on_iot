@@ -104,22 +104,26 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-//    HAL_UART_Receive_DMA(&PC_COMM_UART, pc_comm_receive, 5);
     HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_receive, 32);
-//    HAL_UART_Receive_IT(&huart2, pc_comm_receive, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//    size_t length;
-//    uint8_t buffer[200];
-//    length = sprintf(buffer, "HEllo WOrld");
-    /* USER CODE END WHILE */
-//      uart_send_message(&PC_COMM_UART, buffer, length);
-//    HAL_Delay(2000);
     /* USER CODE BEGIN 3 */
+    if(sensor_new_data_flag)
+    {
+        sensor_new_data_flag = 0;
+        char result[100];
+//        sprintf(result, "Checksum Calculated: %d\n\r", validate_checksum(pm_sensor_receive));
+        sprintf(result, "Checksum Calculated: %d\tChecksum from data:%d\n\r",
+                validate_checksum(pm_sensor_receive),
+                get_checksum(pm_sensor_receive));
+        uart_send_message(&PC_COMM_UART, result);
+    }
+
+//    HAL_Delay(2000);
   }
   /* USER CODE END 3 */
 }
