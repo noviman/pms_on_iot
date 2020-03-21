@@ -104,7 +104,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_receive, 32);
+    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 32);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -115,11 +115,13 @@ int main(void)
     if(sensor_new_data_flag)
     {
         sensor_new_data_flag = 0;
+        update_data_struct(pm_sensor_raw_data);
         char result[100];
-//        sprintf(result, "Checksum Calculated: %d\n\r", validate_checksum(pm_sensor_receive));
-        sprintf(result, "Checksum Calculated: %d\tChecksum from data:%d\n\r",
-                validate_checksum(pm_sensor_receive),
-                get_checksum(pm_sensor_receive));
+        sprintf(result, "%d:PM2.5 Ambient: %d\tPM10 Ambient: %d. Checksum: %d\n\r",
+                pm_sensor.probe_count,
+                pm_sensor.PM2_5_amb,
+                pm_sensor.PM10_0_amb,
+                pm_sensor.checksum);
         uart_send_message(&PC_COMM_UART, result);
     }
 

@@ -17,7 +17,7 @@
 #define PM_SENSOR_RECEIVE_MAX 32
 
 extern uint8_t pc_comm_receive[PC_COMM_RECEIVE_MAX];
-extern uint8_t pm_sensor_receive[PM_SENSOR_RECEIVE_MAX];
+extern uint8_t pm_sensor_raw_data[PM_SENSOR_RECEIVE_MAX];
 //volatile uint8_t nb_iot_receive[MAX_RECEIVE_ARRAY];
 
 HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef * , const char * );
