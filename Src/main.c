@@ -104,7 +104,10 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 32);
+    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 8);
+    pm_sensor_state(0x00);
+
+//    pm_sensor_change_mode(0x00);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -112,20 +115,12 @@ int main(void)
   while (1)
   {
     /* USER CODE BEGIN 3 */
-    if(sensor_new_data_flag)
-    {
-        sensor_new_data_flag = 0;
-        update_data_struct(pm_sensor_raw_data);
-        char result[100];
-        sprintf(result, "%d:PM2.5 Ambient: %d\tPM10 Ambient: %d. Checksum: %d\n\r",
-                pm_sensor.probe_count,
-                pm_sensor.PM2_5_amb,
-                pm_sensor.PM10_0_amb,
-                pm_sensor.checksum);
-        uart_send_message(&PC_COMM_UART, result);
-    }
+    if(pm_sensor_rx_flag)
+        pm_sensor_rx_callback();
 
-//    HAL_Delay(2000);
+//      pm_sensor_state(0x00);
+      HAL_Delay(3000);
+      pm_sensor_state(0x01);
   }
   /* USER CODE END 3 */
 }

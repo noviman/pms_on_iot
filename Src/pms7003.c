@@ -4,11 +4,13 @@
 
 #include "pms7003.h"
 
-uint8_t sensor_new_data_flag = 0;
-PMS7003_struct pm_sensor = { }; // Initialize with 0 every elem
-uint8_t update_data_struct(const uint8_t * raw_data)
+uint8_t pm_sensor_rx_flag = 0;
+static uint8_t pm_sensor_tx_frame[7] = {0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00};
+static PMS7003_struct pm_sensor = { }; // Initialize with 0 every elem
+
+uint8_t pm_sensor_update_data(const uint8_t *raw_data)
 {
-    uint16_t calc_checksum = validate_checksum(raw_data);
+    uint16_t calc_checksum = pm_sensor_validate_checksum(raw_data);
     if (!calc_checksum)
         return 0;
     pm_sensor.frameHeader[0] = raw_data[0];
@@ -31,7 +33,7 @@ uint8_t update_data_struct(const uint8_t * raw_data)
     return 1;
 }
 
-uint16_t validate_checksum(const uint8_t * raw_data)
+uint16_t pm_sensor_validate_checksum(const uint8_t * raw_data)
 {
     uint16_t calc_sum = 0;
     uint16_t check_code = (raw_data[30] << 8) | raw_data[31];
@@ -39,4 +41,74 @@ uint16_t validate_checksum(const uint8_t * raw_data)
         calc_sum += raw_data[i];
 
     return calc_sum & check_code;
+}
+
+void pm_sensor_rx_callback(void)
+{
+    char mes_to_pc[200];
+    pm_sensor_rx_flag = 0; // Flag Clear
+    if(pm_sensor_update_data(pm_sensor_raw_data))
+    {
+        sprintf(mes_to_pc, "%d:PM2.5 Ambient: %d\tPM10 Ambient: %d. Checksum: %d\n\r",
+                pm_sensor.probe_count,
+                pm_sensor.PM2_5_amb,
+                pm_sensor.PM10_0_amb,
+                pm_sensor.checksum);
+    } else
+    {
+        sprintf(mes_to_pc, "Checksum is not correct.Full Frame;\n");
+        for(uint8_t i = 0; i < MAX_FRAME_LEN; i++)
+            sprintf(mes_to_pc, "%s 0x%92X", mes_to_pc, pm_sensor_raw_data[i]);
+    }
+    uart_send_message(&PC_COMM_UART, mes_to_pc);
+}
+
+void pm_sensor_change_mode(const uint8_t mode)
+{
+    uint16_t checksum = 0x0000;
+
+    pm_sensor_tx_frame[2] = 0xE1;
+    pm_sensor_tx_frame[4] = 0X00;
+
+    for (uint8_t i = 0; i < 5; i++)
+        checksum += pm_sensor_tx_frame[i];
+
+    pm_sensor_tx_frame[5] = (uint8_t)((checksum & 0xFF00) >> 8);
+    pm_sensor_tx_frame[6] = (uint8_t)(checksum & 0x00FF);
+
+//    __HAL_DMA_DISABLE(PM_SENSOR_UART.hdmarx);
+//    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 7);
+    HAL_UART_Transmit_DMA(&PM_SENSOR_UART, pm_sensor_tx_frame, 7);
+}
+
+void pm_sensor_request_data_passive_mode(void)
+{
+    uint8_t host_frame[7] = { 0x42, 0x4D, 0xE2, 0x00, 0x00, 0x00, 0x00 };
+    uint16_t checksum = 0x0000;
+
+    pm_sensor_tx_frame[2] = 0xE2;
+    pm_sensor_tx_frame[4] = 0x00;
+
+    for (uint8_t i = 0; i < 5; i++)
+        checksum += pm_sensor_tx_frame[i];
+
+    pm_sensor_tx_frame[5] = (uint8_t)((checksum & 0xFF00) >> 8);
+    pm_sensor_tx_frame[6] = (uint8_t)(checksum & 0x00FF);
+
+    HAL_UART_Transmit_DMA(&PM_SENSOR_UART, pm_sensor_tx_frame, 7);
+}
+
+void pm_sensor_state(const uint8_t mode)
+{
+    uint16_t checksum = 0x0000;
+
+    pm_sensor_tx_frame[2] = 0xE4;
+    pm_sensor_tx_frame[4] = mode;
+    for (uint8_t i = 0; i < 5; i++)
+        checksum += pm_sensor_tx_frame[i];
+
+    pm_sensor_tx_frame[5] = (uint8_t)((checksum & 0xFF00) >> 8);
+    pm_sensor_tx_frame[6] = (uint8_t)(checksum & 0x00FF);
+
+    HAL_UART_Transmit_DMA(&PM_SENSOR_UART, pm_sensor_tx_frame, 7);
 }

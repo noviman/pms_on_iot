@@ -7,7 +7,6 @@
 
 #include "main.h"
 
-#define PMS_ACTIVEMODE 1
 #define MAX_FRAME_LEN 32
 
 typedef struct PMS7003_struct {
@@ -29,10 +28,14 @@ typedef struct PMS7003_struct {
     uint16_t checksum;
 } PMS7003_struct;
 
-extern PMS7003_struct pm_sensor;
-extern uint8_t sensor_new_data_flag;
+static PMS7003_struct pm_sensor;
+extern uint8_t pm_sensor_rx_flag;
 
-uint8_t update_data_struct(const uint8_t *);
-uint16_t validate_checksum(const uint8_t *raw_data);
-
+uint8_t pm_sensor_update_data(const uint8_t *);
+uint16_t pm_sensor_validate_checksum(const uint8_t *);
+void pm_sensor_rx_callback();
+void pm_sensor_change_mode(const uint8_t);
+void pm_sensor_state(const uint8_t);
+void pm_sensor_request_data_passive_mode(void);
+//void pm_sensor_
 #endif //SENSOR_PM_PMS7003_H

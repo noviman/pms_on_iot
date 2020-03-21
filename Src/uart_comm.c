@@ -12,10 +12,12 @@ HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef * handle, const char * me
     length = strlen(message);
     HAL_UART_Transmit_DMA(handle, (uint8_t *) message, (uint16_t) length);
 }
-
 // Interruptions
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    sensor_new_data_flag = 1;
-    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 32);
+    if (huart == &PM_SENSOR_UART)
+    {
+        pm_sensor_rx_flag = 1;
+        HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 8);
+    }
 }
