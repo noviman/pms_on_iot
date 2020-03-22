@@ -104,10 +104,9 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 8);
-    pm_sensor_state(0x00);
+  HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 32);
+  HAL_UART_Receive_DMA(&PC_COMM_UART, pc_comm_raw_data, 1);
 
-//    pm_sensor_change_mode(0x00);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,9 +117,12 @@ int main(void)
     if(pm_sensor_rx_flag)
         pm_sensor_rx_callback();
 
-//      pm_sensor_state(0x00);
-      HAL_Delay(3000);
-      pm_sensor_state(0x01);
+    if (pc_comm_rx_flag)
+        pc_comm_rx_callback();
+
+//      pm_sensor_host_tx(0x00);
+//      HAL_Delay(3000);
+//      pm_sensor_host_tx(0x01);
   }
   /* USER CODE END 3 */
 }

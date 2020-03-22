@@ -31,11 +31,15 @@ typedef struct PMS7003_struct {
 static PMS7003_struct pm_sensor;
 extern uint8_t pm_sensor_rx_flag;
 
+extern uint8_t pm_sensor_tx_frame[7];
+extern uint8_t pm_sensor_changeM_passive[4];
+extern uint8_t pm_sensor_changeM_active[4];
+extern uint8_t pm_sensor_changeSt_sleep[4];
+extern uint8_t pm_sensor_changeSt_wakeup[4];
+extern uint8_t pm_sensor_req_read[4];
+
 uint8_t pm_sensor_update_data(const uint8_t *);
 uint16_t pm_sensor_validate_checksum(const uint8_t *);
 void pm_sensor_rx_callback();
-void pm_sensor_change_mode(const uint8_t);
-void pm_sensor_state(const uint8_t);
-void pm_sensor_request_data_passive_mode(void);
-//void pm_sensor_
+void pm_sensor_host_tx(const uint8_t *);
 #endif //SENSOR_PM_PMS7003_H
