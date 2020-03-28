@@ -106,6 +106,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 32);
   HAL_UART_Receive_DMA(&PC_COMM_UART, pc_comm_raw_data, 1);
+  HAL_UART_Receive_DMA(&NB_IOT_UART, nb_iot_raw_data_buffer, NB_IOT_RECEIVE_MAX);
 
   /* USER CODE END 2 */
 
@@ -191,7 +192,7 @@ static void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
-
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
   /* USER CODE END USART1_Init 2 */
 
 }
