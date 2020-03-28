@@ -32,10 +32,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "uart_comm.h"
 #include "stdio.h"
-#include "pms7003.h"
-#include "pc_comm.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

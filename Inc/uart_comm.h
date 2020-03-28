@@ -4,8 +4,8 @@
 
 #ifndef SENSOR_PM_UART_COMM_H
 #define SENSOR_PM_UART_COMM_H
+
 #include "main.h"
-#include "string.h"
 
 #define PC_COMM_UART huart2
 #define PM_SENSOR_UART huart3

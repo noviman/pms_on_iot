@@ -4,6 +4,8 @@
 #include "uart_comm.h"
 #include "nb_iot.h"
 #include "string.h"
+#include "pms7003.h"
+#include "pc_comm.h"
 
 uint8_t pc_comm_raw_data[PC_COMM_RECEIVE_MAX];
 uint8_t pm_sensor_raw_data[PM_SENSOR_RECEIVE_MAX];

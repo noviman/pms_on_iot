@@ -3,6 +3,7 @@
 //
 
 #include "pms7003.h"
+#include "uart_comm.h"
 
 uint8_t pm_sensor_rx_flag = 0;
 uint8_t pm_sensor_tx_frame[7] = {0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00};
