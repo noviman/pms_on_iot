@@ -10,7 +10,7 @@ void pc_comm_rx_callback()
 {
     char mes_ret;
     pc_comm_rx_flag = 0;
-    switch(pc_comm_raw_data[0]) {
+    switch(pc_uart.raw_data[0]) {
         case 0x01:
             pm_sensor_host_tx(pm_sensor_changeSt_sleep);
             break;

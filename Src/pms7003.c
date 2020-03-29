@@ -51,19 +51,18 @@ uint16_t pm_sensor_validate_checksum(const uint8_t * raw_data)
     return calc_sum & check_code;
 }
 
-void pm_sensor_rx_callback(void)
+void pm_sensor_rx_callback()
 {
     char mes_to_pc[200] = { 0 };
     size_t mes_length = 0;
-    pm_sensor_rx_flag = 0; // Flag Clear
-
-    if ((pm_sensor_raw_data[2] << 8 | pm_sensor_raw_data[3]) == 0x1C)
+    pms_uart.flag = 0; // Flag Clear
+    if ((pms_uart.raw_data[2] << 8 | pms_uart.raw_data[3]) == 0x1C)
         mes_length = MAX_FRAME_LEN;
     else
         mes_length = 8;
 
     if (mes_length == MAX_FRAME_LEN) {
-        if (pm_sensor_update_data(pm_sensor_raw_data)) {
+        if (pm_sensor_update_data(pms_uart.raw_data)) {
             sprintf(mes_to_pc, "%d:PM2.5 Ambient: %d\tPM10 Ambient: %d. Checksum: %d\n\r",
                     pm_sensor.probe_count,
                     pm_sensor.PM2_5_amb,
@@ -72,13 +71,13 @@ void pm_sensor_rx_callback(void)
         } else {
             sprintf(mes_to_pc, "Checksum is not correct.Full Frame;\n\r");
             for (uint8_t i = 0; i < mes_length; i++)
-                sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pm_sensor_raw_data[i]);
+                sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data[i]);
             sprintf(mes_to_pc, "%s\n\r", mes_to_pc);
         }
     } else{
         sprintf(mes_to_pc, "Full Frame;\n\r");
         for (uint8_t i = 0; i < mes_length; i++)
-            sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pm_sensor_raw_data[i]);
+            sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data[i]);
         sprintf(mes_to_pc, "%s\n\r", mes_to_pc);
     }
     uart_send_message(&PC_COMM_UART, mes_to_pc);
@@ -102,9 +101,9 @@ void pm_sensor_host_tx(const uint8_t * frame)
     if(frame[3] == 0x01) {
         // Reinit
         if(HAL_UART_DMAStop(&PM_SENSOR_UART) == HAL_OK) {
-            HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 8);
+            HAL_UART_Receive_DMA(&PM_SENSOR_UART, pms_uart.raw_data, 8);
             for (uint8_t i = 0; i < PM_SENSOR_RECEIVE_MAX; i++)
-                pm_sensor_raw_data[i] = 0x00;
+                pms_uart.raw_data[i] = 0x00;
         }
     }
     // Transmit Message

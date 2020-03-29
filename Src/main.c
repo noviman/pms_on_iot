@@ -23,6 +23,7 @@
 #include "uart_comm.h"
 #include "pms7003.h"
 #include "pc_comm.h"
+#include "nb_iot.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -107,9 +108,9 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_DMA(&PM_SENSOR_UART, pm_sensor_raw_data, 32);
-  HAL_UART_Receive_DMA(&PC_COMM_UART, pc_comm_raw_data, 1);
-  HAL_UART_Receive_DMA(&NB_IOT_UART, nb_iot_raw_data_buffer, NB_IOT_RECEIVE_MAX);
+
+  start_dma_uart_rx();
+
 
   /* USER CODE END 2 */
 
@@ -118,15 +119,15 @@ int main(void)
   while (1)
   {
     /* USER CODE BEGIN 3 */
-    if(pm_sensor_rx_flag)
+    if(pms_uart.flag)
         pm_sensor_rx_callback();
 
-    if (pc_comm_rx_flag)
+    if (pc_uart.flag)
         pc_comm_rx_callback();
 
-//      pm_sensor_host_tx(0x00);
-//      HAL_Delay(3000);
-//      pm_sensor_host_tx(0x01);
+    if (nb_iot_uart.flag)
+        nb_iot_rx_callback();
+
   }
   /* USER CODE END 3 */
 }
@@ -228,7 +229,7 @@ static void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
-
+    __HAL_UART_ENABLE_IT(&huart2, UART_IT_IDLE);
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -261,7 +262,7 @@ static void MX_USART3_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART3_Init 2 */
-
+    __HAL_UART_ENABLE_IT(&huart3, UART_IT_IDLE);
   /* USER CODE END USART3_Init 2 */
 
 }
