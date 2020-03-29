@@ -20,13 +20,13 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 #include "uart_comm.h"
 #include "pms7003.h"
 #include "pc_comm.h"
 #include "nb_iot.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
@@ -118,6 +118,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
     if(pms_uart.flag)
         pm_sensor_rx_callback();

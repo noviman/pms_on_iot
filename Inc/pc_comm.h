@@ -7,7 +7,6 @@
 
 #include "uart_comm.h"
 
-extern uint8_t pc_comm_rx_flag;
 void pc_comm_rx_callback();
 
 #endif //SENSOR_PM_PC_COMM_H

@@ -29,7 +29,6 @@ typedef struct PMS7003_struct {
 } PMS7003_struct;
 
 static PMS7003_struct pm_sensor;
-extern uint8_t pm_sensor_rx_flag;
 
 extern uint8_t pm_sensor_tx_frame[7];
 extern uint8_t pm_sensor_changeM_passive[4];

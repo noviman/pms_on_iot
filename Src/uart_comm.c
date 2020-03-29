@@ -42,11 +42,11 @@ void IDLE_UART_Callback(UART_HandleTypeDef * handle)
 {
     HAL_UART_DMAStop(handle);
 
-    // Calc the data length
     if (handle == &NB_IOT_UART)
     {
         nb_iot_uart.data_length = NB_IOT_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
-        strcpy( (char *) nb_iot_uart.raw_data, (char *) nb_iot_uart.raw_data_buffer);
+        memset(nb_iot_uart.raw_data, 0, NB_IOT_RECEIVE_MAX); // Clear whole buffer
+        memcpy(nb_iot_uart.raw_data, nb_iot_uart.raw_data_buffer, nb_iot_uart.data_length);
         memset(nb_iot_uart.raw_data_buffer, 0, nb_iot_uart.data_length);
         HAL_UART_Receive_DMA(handle, nb_iot_uart.raw_data_buffer, NB_IOT_RECEIVE_MAX);
         nb_iot_uart.flag = 1;
@@ -54,7 +54,8 @@ void IDLE_UART_Callback(UART_HandleTypeDef * handle)
     else if(handle == &PM_SENSOR_UART)
     {
         pms_uart.data_length = PM_SENSOR_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
-        strcpy( (char *) pms_uart.raw_data, (char *) pms_uart.raw_data_buffer);
+        memset(pms_uart.raw_data, 0, PM_SENSOR_RECEIVE_MAX);
+        memcpy(pms_uart.raw_data, pms_uart.raw_data_buffer, pms_uart.data_length);
         memset(pms_uart.raw_data_buffer, 0, pms_uart.data_length);
         HAL_UART_Receive_DMA(handle, pms_uart.raw_data_buffer, PM_SENSOR_RECEIVE_MAX);
         pms_uart.flag = 1;
@@ -62,7 +63,8 @@ void IDLE_UART_Callback(UART_HandleTypeDef * handle)
     else if(handle == &PC_COMM_UART)
     {
         pc_uart.data_length = PC_COMM_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
-        strcpy( (char *) pc_uart.raw_data, (char *) pc_uart.raw_data_buffer);
+        memset(pc_uart.raw_data, 0, PC_COMM_RECEIVE_MAX);
+        memcpy(pc_uart.raw_data, pc_uart.raw_data_buffer, pc_uart.data_length);
         memset(pc_uart.raw_data_buffer, 0, pc_uart.data_length);
         HAL_UART_Receive_DMA(handle, pc_uart.raw_data_buffer, PC_COMM_RECEIVE_MAX);
         pc_uart.flag = 1;

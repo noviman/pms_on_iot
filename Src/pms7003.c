@@ -54,14 +54,9 @@ uint16_t pm_sensor_validate_checksum(const uint8_t * raw_data)
 void pm_sensor_rx_callback()
 {
     char mes_to_pc[200] = { 0 };
-    size_t mes_length = 0;
     pms_uart.flag = 0; // Flag Clear
-    if ((pms_uart.raw_data[2] << 8 | pms_uart.raw_data[3]) == 0x1C)
-        mes_length = MAX_FRAME_LEN;
-    else
-        mes_length = 8;
 
-    if (mes_length == MAX_FRAME_LEN) {
+    if (pms_uart.data_length == MAX_FRAME_LEN) {
         if (pm_sensor_update_data(pms_uart.raw_data)) {
             sprintf(mes_to_pc, "%d:PM2.5 Ambient: %d\tPM10 Ambient: %d. Checksum: %d\n\r",
                     pm_sensor.probe_count,
@@ -70,13 +65,13 @@ void pm_sensor_rx_callback()
                     pm_sensor.checksum);
         } else {
             sprintf(mes_to_pc, "Checksum is not correct.Full Frame;\n\r");
-            for (uint8_t i = 0; i < mes_length; i++)
+            for (uint16_t i = 0; i < pms_uart.data_length; i++)
                 sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data[i]);
             sprintf(mes_to_pc, "%s\n\r", mes_to_pc);
         }
     } else{
         sprintf(mes_to_pc, "Full Frame;\n\r");
-        for (uint8_t i = 0; i < mes_length; i++)
+        for (uint16_t i = 0; i < pms_uart.data_length; i++)
             sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data[i]);
         sprintf(mes_to_pc, "%s\n\r", mes_to_pc);
     }
