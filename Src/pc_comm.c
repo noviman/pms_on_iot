@@ -6,7 +6,7 @@
 
 void pc_comm_rx_callback()
 {
-    pc_uart.flag = 0;
+    pc_uart.rx_flag = 0;
     switch(pc_uart.raw_data[0]) {
         case 0x01:
             pm_sensor_host_tx(pm_sensor_changeSt_sleep);
@@ -24,7 +24,7 @@ void pc_comm_rx_callback()
             pm_sensor_host_tx(pm_sensor_req_read);
             break;
         default:
-            uart_send_message(&PC_COMM_UART, (char *) pc_uart.raw_data);
+            uart_send_message(&PC_COMM_UART, (char *) pc_uart.raw_data, pc_uart.name);
             break;
     }
 }

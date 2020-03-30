@@ -121,13 +121,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if(pms_uart.flag)
+    if(pms_uart.rx_flag)
         pm_sensor_rx_callback();
 
-    if (pc_uart.flag)
+    if (pc_uart.rx_flag)
         pc_comm_rx_callback();
 
-    if (nb_iot_uart.flag)
+    if (nb_iot_uart.rx_flag)
         nb_iot_rx_callback();
 
   }

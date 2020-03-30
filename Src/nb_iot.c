@@ -7,8 +7,8 @@
 void nb_iot_rx_callback()
 {
     char message[100];
-    nb_iot_uart.flag = 0;
+    nb_iot_uart.rx_flag = 0;
     sprintf(message, "'%s'", nb_iot_uart.raw_data);
-    uart_send_message(&NB_IOT_UART, message);
+    uart_send_message(&NB_IOT_UART, message, nb_iot_uart.name);
 
 }

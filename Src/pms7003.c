@@ -5,7 +5,6 @@
 #include "pms7003.h"
 #include "uart_comm.h"
 
-uint8_t pm_sensor_rx_flag = 0;
 uint8_t pm_sensor_tx_frame[7] = {0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00};
 // Last Byte decides if Answer is expected
 uint8_t pm_sensor_changeM_passive[4] = {0xE1, 0x00, 0x00, 0x01};
@@ -54,7 +53,7 @@ uint16_t pm_sensor_validate_checksum(const uint8_t * raw_data)
 void pm_sensor_rx_callback()
 {
     char mes_to_pc[200] = { 0 };
-    pms_uart.flag = 0; // Flag Clear
+    pms_uart.rx_flag = 0; // Flag Clear
 
     if (pms_uart.data_length == MAX_FRAME_LEN) {
         if (pm_sensor_update_data(pms_uart.raw_data)) {
@@ -75,7 +74,7 @@ void pm_sensor_rx_callback()
             sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data[i]);
         sprintf(mes_to_pc, "%s\n\r", mes_to_pc);
     }
-    uart_send_message(&PC_COMM_UART, mes_to_pc);
+    uart_send_message(&PC_COMM_UART, mes_to_pc, pms_uart.name);
 }
 
 void pm_sensor_host_tx(const uint8_t * frame)
