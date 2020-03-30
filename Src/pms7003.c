@@ -80,6 +80,7 @@ void pm_sensor_rx_callback()
 void pm_sensor_host_tx(const uint8_t * frame)
 {
     uint16_t checksum = 0x0000;
+    char message[UART_TRANSMIT_MAX];
     // Assign Bytes to Send Buff
     for(uint8_t i = 0; i < 3; i++)
         pm_sensor_tx_frame[i+2] = frame[i];
@@ -91,15 +92,6 @@ void pm_sensor_host_tx(const uint8_t * frame)
     pm_sensor_tx_frame[5] = (uint8_t)((checksum & 0xFF00) >> 8);
     pm_sensor_tx_frame[6] = (uint8_t)(checksum & 0x00FF);
 
-    // Check if answer is expected.
-    if(frame[3] == 0x01) {
-        // Reinit
-        if(HAL_UART_DMAStop(&PM_SENSOR_UART) == HAL_OK) {
-            HAL_UART_Receive_DMA(&PM_SENSOR_UART, pms_uart.raw_data, 8);
-            for (uint8_t i = 0; i < PM_SENSOR_RECEIVE_MAX; i++)
-                pms_uart.raw_data[i] = 0x00;
-        }
-    }
     // Transmit Message
     HAL_UART_Transmit_DMA(&PM_SENSOR_UART, pm_sensor_tx_frame, 7);
 }

@@ -9,15 +9,15 @@
 
  // Initialize with 0 every elem
 
-pc_uart_struct pc_uart = { .name = "PC_UART" };
-pms_uart_struct pms_uart = { .name = "PMS_UART" };
-nb_iot_uart_struct nb_iot_uart = { .name = "NB-IOT_UART" };
+uart_struct pc_uart = { .name = "PC_UART" };
+uart_struct pms_uart = { .name = "PMS_UART" };
+uart_struct nb_iot_uart = { .name = "NB-IOT_UART" };
 
 void start_dma_uart_rx(void)
 {
-    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pms_uart.raw_data_buffer, PM_SENSOR_RECEIVE_MAX);
-    HAL_UART_Receive_DMA(&PC_COMM_UART, pc_uart.raw_data_buffer, PC_COMM_RECEIVE_MAX);
-    HAL_UART_Receive_DMA(&NB_IOT_UART, nb_iot_uart.raw_data_buffer, NB_IOT_RECEIVE_MAX);
+    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pms_uart.raw_data_buffer, UART_RECEIVE_MAX);
+    HAL_UART_Receive_DMA(&PC_COMM_UART, pc_uart.raw_data_buffer, UART_RECEIVE_MAX);
+    HAL_UART_Receive_DMA(&NB_IOT_UART, nb_iot_uart.raw_data_buffer, UART_RECEIVE_MAX);
 }
 
 HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *message, const char *receiver)
@@ -25,7 +25,7 @@ HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *mess
     size_t length;
     if (handle == &PC_COMM_UART)
     {
-        char message_to_pc[PC_COMM_RECEIVE_MAX];
+        char message_to_pc[UART_TRANSMIT_MAX];
         sprintf(message_to_pc, "[%s] %s", receiver, message);
         length = strlen(message_to_pc);
         HAL_UART_Transmit_DMA(handle, (uint8_t *) message_to_pc, (uint16_t) length);
@@ -44,59 +44,29 @@ void IDLE_DETECT_UART_IRQHandler(UART_HandleTypeDef * handle)
     if(RESET != __HAL_UART_GET_FLAG(handle, UART_FLAG_IDLE))   // Check if IDLE IT
     {
         __HAL_UART_CLEAR_IDLEFLAG(handle); // Clear IDLE IT Flag
-        IDLE_UART_Callback(handle);
+        if (handle == &PC_COMM_UART)
+        {
+            IDLE_UART_Callback(handle, &pc_uart);
+        }
+
+        else if (handle == &NB_IOT_UART)
+        {
+            IDLE_UART_Callback(handle, &nb_iot_uart);
+        }
+
+        else if (handle == &PM_SENSOR_UART)
+        {
+            IDLE_UART_Callback(handle, &pms_uart);
+        }
     }
 }
 
-void IDLE_UART_Callback(UART_HandleTypeDef * handle)
-{
+void IDLE_UART_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct_handle) {
     HAL_UART_DMAStop(handle);
-
-    if (handle == &NB_IOT_UART)
-    {
-        nb_iot_uart.data_length = NB_IOT_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
-        memset(nb_iot_uart.raw_data, 0, NB_IOT_RECEIVE_MAX); // Clear whole buffer
-        memcpy(nb_iot_uart.raw_data, nb_iot_uart.raw_data_buffer, nb_iot_uart.data_length);
-        memset(nb_iot_uart.raw_data_buffer, 0, nb_iot_uart.data_length);
-        HAL_UART_Receive_DMA(handle, nb_iot_uart.raw_data_buffer, NB_IOT_RECEIVE_MAX);
-        nb_iot_uart.rx_flag = 1;
-    }
-    else if(handle == &PM_SENSOR_UART)
-    {
-        pms_uart.data_length = PM_SENSOR_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
-        memset(pms_uart.raw_data, 0, PM_SENSOR_RECEIVE_MAX);
-        memcpy(pms_uart.raw_data, pms_uart.raw_data_buffer, pms_uart.data_length);
-        memset(pms_uart.raw_data_buffer, 0, pms_uart.data_length);
-        HAL_UART_Receive_DMA(handle, pms_uart.raw_data_buffer, PM_SENSOR_RECEIVE_MAX);
-        pms_uart.rx_flag = 1;
-    }
-    else if(handle == &PC_COMM_UART)
-    {
-        pc_uart.data_length = PC_COMM_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
-        memset(pc_uart.raw_data, 0, PC_COMM_RECEIVE_MAX);
-        memcpy(pc_uart.raw_data, pc_uart.raw_data_buffer, pc_uart.data_length);
-        memset(pc_uart.raw_data_buffer, 0, pc_uart.data_length);
-        HAL_UART_Receive_DMA(handle, pc_uart.raw_data_buffer, PC_COMM_RECEIVE_MAX);
-        pc_uart.rx_flag = 1;
-    }
-    else
-    {
-        Error_Handler();
-    }
-
-//    HAL_UART_Transmit_IT(handle, nb_iot_raw_data_buffer, data_length);
+    uart_struct_handle->data_length = UART_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
+    memset(uart_struct_handle->raw_data, 0, UART_RECEIVE_MAX); // Clear whole buffer
+    memcpy(uart_struct_handle->raw_data, uart_struct_handle->raw_data_buffer, uart_struct_handle->data_length);
+    memset(uart_struct_handle->raw_data_buffer, 0, uart_struct_handle->data_length);
+    HAL_UART_Receive_DMA(handle, uart_struct_handle->raw_data_buffer, UART_RECEIVE_MAX);
+    uart_struct_handle->rx_flag = 1;
 }
-
-//
-//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-//    if (huart == &PM_SENSOR_UART)
-//    {
-//        pm_sensor_rx_flag = 1;
-//        HAL_UART_Receive_DMA(huart, pm_sensor_raw_data, 32);
-//    }
-//    else if (huart == &PC_COMM_UART)
-//    {
-//        pc_comm_rx_flag = 1;
-//        HAL_UART_Receive_DMA(huart, pc_comm_raw_data, 1);
-//    }
-//}
