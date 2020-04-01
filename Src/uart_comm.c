@@ -2,10 +2,8 @@
 // Created by bartek on 3/18/20.
 //
 #include "uart_comm.h"
-#include "nb_iot.h"
 #include "string.h"
-#include "pms7003.h"
-#include "pc_comm.h"
+#include "stdlib.h"
 
  // Initialize with 0 every elem
 
@@ -35,8 +33,15 @@ HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *mess
         length = strlen(message);
         HAL_UART_Transmit_DMA(handle, (uint8_t *) message, (uint16_t) length);
     }
-
 }
+
+char * add_newline_to_message(char * message)
+{
+    char *string = malloc( (strlen(message) + 4) * sizeof(char));
+    sprintf(string, "%s\r\n", message);
+    return string;
+}
+
 //  Interruptions
 
 void IDLE_DETECT_UART_IRQHandler(UART_HandleTypeDef * handle)
@@ -57,6 +62,10 @@ void IDLE_DETECT_UART_IRQHandler(UART_HandleTypeDef * handle)
         else if (handle == &PM_SENSOR_UART)
         {
             IDLE_UART_Callback(handle, &pms_uart);
+        }
+        else
+        {
+            Error_Handler();
         }
     }
 }

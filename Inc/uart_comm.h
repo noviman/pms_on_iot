@@ -29,6 +29,7 @@ extern uart_struct pms_uart;
 extern uart_struct nb_iot_uart;
 
 void start_dma_uart_rx(void);
+char * add_newline_to_message(char * );
 HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *message, const char *receiver);
 // Idle Detection
 void IDLE_DETECT_UART_IRQHandler(UART_HandleTypeDef *);
