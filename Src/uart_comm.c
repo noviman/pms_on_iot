@@ -4,6 +4,8 @@
 #include "uart_comm.h"
 #include "string.h"
 #include "stdlib.h"
+#include "stm32f1xx_hal_dma_ex.h"
+#include "stm32f1xx_hal_uart.h"
 
  // Initialize with 0 every elem
 
@@ -20,10 +22,12 @@ void start_dma_uart_rx(void)
 
 HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *message, const char *receiver)
 {
-    size_t length;
+    size_t length = 0;
+//    while(__HAL_DMA_GET_COUNTER(handle->hdmatx) != 0) { }
+    while(handle->gState == HAL_UART_STATE_BUSY_TX) { }  // Prevent from corrupting TX Messages
     if (handle == &PC_COMM_UART)
     {
-        char message_to_pc[UART_TRANSMIT_MAX];
+        char message_to_pc[UART_TRANSMIT_MAX] = { 0 };
         sprintf(message_to_pc, "[%s] %s", receiver, message);
         length = strlen(message_to_pc);
         HAL_UART_Transmit_DMA(handle, (uint8_t *) message_to_pc, (uint16_t) length);
@@ -34,7 +38,7 @@ HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *mess
         HAL_UART_Transmit_DMA(handle, (uint8_t *) message, (uint16_t) length);
     }
 }
-
+// When Using this function, to avoid memory leak, free the memory after usage of this fnc!
 char * add_newline_to_message(char * message)
 {
     char *string = malloc( (strlen(message) + 4) * sizeof(char));

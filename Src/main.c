@@ -127,8 +127,8 @@ int main(void)
     if (pc_uart.rx_flag)
         pc_comm_rx_callback();
 
-    if (nb_iot_uart.rx_flag)
-        nb_iot_rx_callback();
+//    if (nb_iot_uart.rx_flag)
+//        nb_iot_rx_callback();
 
   }
   /* USER CODE END 3 */

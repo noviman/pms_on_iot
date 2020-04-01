@@ -5,6 +5,7 @@
 #include "pms7003.h"
 #include "string.h"
 #include "stdlib.h"
+#include "nb_iot.h"
 
 void pc_comm_rx_callback()
 {
@@ -40,6 +41,18 @@ uint8_t pms_commands(const char * command)
     }
     return 1;
 }
+uint8_t nb_commands(const char * command)
+{
+    if ( 0 == strcmp(command, "CHECKSIM") )
+    {
+        nb_check_sim_status();
+    }
+    else
+    {
+        return 0;
+    }
+    return 1;
+}
 uint8_t pc_comm_handle_command(const char * command)
 {
     char command_buffer[UART_RECEIVE_MAX];
@@ -56,22 +69,21 @@ uint8_t pc_comm_handle_command(const char * command)
     char *string_with_newline = add_newline_to_message(command_tx_buffer);
     switch(chosen_interface)
     {
-        // PMS
+        // NB-ioT
         case 0:
             // Resend to PC Uart and Send full command to NB_IOT Uart
-            uart_send_message(&NB_IOT_UART, string_with_newline, NULL);
-            uart_send_message(&PC_COMM_UART, string_with_newline, nb_iot_uart.name);
+            if (0 == nb_commands(command_tx_buffer)) {
+                sprintf(command_tx_buffer, "Wrong CMD Chosen."
+                                           "\r\n");
+                uart_send_message(&PC_COMM_UART, command_tx_buffer, nb_iot_uart.name);
+            }
             break;
-        // NB_IOT
+        // PMS
         case 1:
             if (0 == pms_commands(command_tx_buffer)) {
                 sprintf(command_tx_buffer, "Wrong CMD Chosen."
                                            "Available:\tSLEEP\tWAKEUP\tACTIVE\tPASSIVE\tREAD\r\n");
                 uart_send_message(&PC_COMM_UART, command_tx_buffer, pms_uart.name);
-            }
-            else
-            {
-                uart_send_message(&PC_COMM_UART, string_with_newline, pms_uart.name);
             }
             break;
         default:
