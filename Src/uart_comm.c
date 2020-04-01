@@ -1,13 +1,15 @@
 //
 // Created by bartek on 3/18/20.
 //
+#include "nb_iot.h"
 #include "uart_comm.h"
 #include "string.h"
 #include "stdlib.h"
 #include "stm32f1xx_hal_dma_ex.h"
 #include "stm32f1xx_hal_uart.h"
+#include "helpers.h"
 
- // Initialize with 0 every elem
+// Initialize with 0 every elem
 
 uart_struct pc_uart = { .name = "PC_UART" };
 uart_struct pms_uart = { .name = "PMS_UART" };
@@ -37,13 +39,6 @@ HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *mess
         length = strlen(message);
         HAL_UART_Transmit_DMA(handle, (uint8_t *) message, (uint16_t) length);
     }
-}
-// When Using this function, to avoid memory leak, free the memory after usage of this fnc!
-char * add_newline_to_message(char * message)
-{
-    char *string = malloc( (strlen(message) + 4) * sizeof(char));
-    sprintf(string, "%s\r\n", message);
-    return string;
 }
 
 //  Interruptions
@@ -83,3 +78,31 @@ void IDLE_UART_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct_han
     HAL_UART_Receive_DMA(handle, uart_struct_handle->raw_data_buffer, UART_RECEIVE_MAX);
     uart_struct_handle->rx_flag = 1;
 }
+
+uint8_t send_check_message(UART_HandleTypeDef *handle, const char *mes_send, const char *mes_check,
+                           uart_struct *uart_struct_handle, const uint16_t timeout)
+{
+    if(1 == uart_struct_handle->rx_flag)
+    {
+        uart_struct_handle->rx_flag = 0;
+    }
+    uart_send_message(handle, mes_send, NULL);
+    uart_struct_handle->tim_counter = timeout;
+    while(uart_struct_handle->rx_flag == 0)
+    {
+        if(uart_struct_handle->tim_counter == 0)
+        {
+            return 2;
+        }
+    }
+    uart_struct_handle->rx_flag = 0;
+    if(0 != strcmp( remove_req_from_read( (char *)uart_struct_handle->raw_data), mes_check) )
+    {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+

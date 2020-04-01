@@ -6,6 +6,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "nb_iot.h"
+#include "helpers.h"
 
 void pc_comm_rx_callback()
 {
@@ -47,12 +48,12 @@ uint8_t nb_commands(const char * command)
     {
         nb_check_sim_status();
     }
-    else
+    else if ( 0 == strcmp(command, "INIT") )
     {
-        return 0;
+        nb_make_standard_init();
     }
-    return 1;
 }
+
 uint8_t pc_comm_handle_command(const char * command)
 {
     char command_buffer[UART_RECEIVE_MAX];
