@@ -8,10 +8,8 @@
 
 void nb_iot_rx_callback()
 {
-    char message[100];
     nb_iot_uart.rx_flag = 0;
-    sprintf(message, "'%s'", nb_iot_uart.raw_data);
-
+    uart_send_message(&PC_COMM_UART, nb_iot_uart.raw_data_rx, nb_iot_uart.name);
 }
 
 uint8_t nb_check_sim_status()
@@ -21,14 +19,14 @@ uint8_t nb_check_sim_status()
     error_handler = send_check_message(&NB_IOT_UART, "AT\r\n", "OK\r\n", &nb_iot_uart, 300);
     if(1 == error_handler) {
         char message[UART_TRANSMIT_MAX];
-        sprintf(message, "[CMD_RX_OK]%s",(char *) nb_iot_uart.raw_data);
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
         return 1;
     }
     else if(0 == error_handler)
     {
         char message[UART_TRANSMIT_MAX];
-        sprintf(message, "[CMD_RX_FAIL]%s",(char *) nb_iot_uart.raw_data);
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
     }
     else
@@ -53,12 +51,12 @@ uint8_t nb_set_mode(const uint8_t mode) {
     error_handler = send_check_message(&NB_IOT_UART, command, "OK\r\n", &nb_iot_uart, 300);
     if (1 == error_handler) {
         char message[UART_TRANSMIT_MAX];
-        sprintf(message, "[CMD_RX_OK]%s", (char *) nb_iot_uart.raw_data);
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
-        sprintf(message, "[CMD_RX_FAIL]%s", (char *) nb_iot_uart.raw_data);
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
     } else {
         uart_send_message(&PC_COMM_UART, "Timeout exceed without response!\r\n", nb_iot_uart.name);
@@ -82,14 +80,14 @@ uint8_t nb_set_mode_selection(const uint8_t mode)
     if (1 == error_handler)
     {
         char message[UART_TRANSMIT_MAX];
-        sprintf(message, "[CMD_RX_OK]%s",(char *) nb_iot_uart.raw_data);
+        sprintf(message, "[CMD_RX_OK]%s",nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
         return 1;
     }
     else if(0 == error_handler)
     {
         char message[UART_TRANSMIT_MAX];
-        sprintf(message, "[CMD_RX_FAIL]%s",(char *) nb_iot_uart.raw_data);
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
     }
     else
@@ -121,4 +119,189 @@ uint8_t nb_make_standard_init()
 
     if(0 == nb_set_mode_selection(2))
         return 0;
+    HAL_Delay(100);
+
+    if(0 == nb_check_device_connection())
+    {
+        HAL_Delay(100);
+        // If Status NOK, try to Shut PDP Context
+        if(0 == nb_deactivate__gprs_pdp_context())
+            return 0;
+        HAL_Delay(100);
+        // Second Try
+        if(0 == nb_check_device_connection())
+            return 0;
+    }
+    HAL_Delay(100);
+    if(0 == nb_set_apn())
+        return 0;
+
+    HAL_Delay(100);
+    if(0 == nb_bring_up_csd_connection())
+    {
+        return 0;
+    }
+
+    HAL_Delay(300);
+    if(0 == nb_get_ip())
+        return 0;
 }
+uint8_t nb_check_device_connection()
+{
+    uint8_t error_handler;
+    char command[UART_TRANSMIT_MAX];
+
+    sprintf(command, "AT+CIPSTATUS\r\n");
+    error_handler = send_check_message(&NB_IOT_UART, command, "OK\r\n\r\nSTATE: IP INITIAL\r\n", &nb_iot_uart, 300);
+    if (1 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        return 1;
+    }
+    else if(0 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+    }
+    else
+    {
+        uart_send_message(&PC_COMM_UART, "Timeout exceed without response!\r\n", nb_iot_uart.name);
+    }
+    return 0;
+}
+uint8_t nb_deactivate__gprs_pdp_context()
+{
+    uint8_t error_handler;
+    char command[UART_TRANSMIT_MAX];
+
+    sprintf(command, "AT+CIPSHUT\r\n");
+    error_handler = send_check_message(&NB_IOT_UART, command, "SHUT OK\r\n", &nb_iot_uart, 300);
+    if (1 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        return 1;
+    }
+    else if(0 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+    }
+    else
+    {
+        uart_send_message(&PC_COMM_UART, "Timeout exceed without response!\r\n", nb_iot_uart.name);
+    }
+    return 0;
+}
+uint8_t nb_set_apn()
+{
+    uint8_t error_handler;
+    char command[UART_TRANSMIT_MAX];
+
+    sprintf(command, "AT+CSTT=\"hologram\"\r\n");
+    error_handler = send_check_message(&NB_IOT_UART, command, "OK\r\n", &nb_iot_uart, 300);
+    if (1 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        return 1;
+    }
+    else if(0 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+    }
+    else
+    {
+        uart_send_message(&PC_COMM_UART, "Timeout exceed without response!\r\n", nb_iot_uart.name);
+    }
+    return 0;
+}
+uint8_t nb_bring_up_csd_connection()
+{
+    uint8_t error_handler;
+    char command[UART_TRANSMIT_MAX];
+
+    sprintf(command, "AT+CIICR\r\n");
+    error_handler = send_check_message(&NB_IOT_UART, command, "ERROR\r\n", &nb_iot_uart, 150000);
+    if (1 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        return 1;
+    }
+    else if(0 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+    }
+    else
+    {
+        uart_send_message(&PC_COMM_UART, "Timeout exceed without response!\r\n", nb_iot_uart.name);
+    }
+    return 0;
+}
+uint8_t nb_get_ip()
+{
+    uint8_t error_handler;
+    char command[UART_TRANSMIT_MAX];
+
+    sprintf(command, "AT+CIIFSR\r\n");
+    error_handler = send_check_message(&NB_IOT_UART, command, "OK\r\n", &nb_iot_uart, 300);
+    if (1 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        return 1;
+    }
+    else if(0 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+    }
+    else
+    {
+        uart_send_message(&PC_COMM_UART, "Timeout exceed without response!\r\n", nb_iot_uart.name);
+    }
+    return 0;
+}
+
+uint8_t nb_check_register()
+{
+    uint8_t error_handler;
+    char command[UART_TRANSMIT_MAX];
+
+    sprintf(command, "AT+CREG?\r\n");
+    error_handler = send_check_message(&NB_IOT_UART, command, "OK\r\n", &nb_iot_uart, 300);
+    if (1 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        return 1;
+    }
+    else if(0 == error_handler)
+    {
+        char message[UART_TRANSMIT_MAX];
+        sprintf(message, "[CMD_RX_FAIL]%s", nb_iot_uart.raw_data_rx);
+        uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+    }
+    else
+    {
+        uart_send_message(&PC_COMM_UART, "Timeout exceed without response!\r\n", nb_iot_uart.name);
+    }
+    return 0;
+}
+uint8_t nb_open_connection();
+uint8_t nb_send_message();

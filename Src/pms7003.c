@@ -56,7 +56,7 @@ void pm_sensor_rx_callback()
     pms_uart.rx_flag = 0; // Flag Clear
 
     if (pms_uart.data_length == MAX_FRAME_LEN) {
-        if (pm_sensor_update_data(pms_uart.raw_data)) {
+        if (pm_sensor_update_data(pms_uart.raw_data_rx)) {
             sprintf(mes_to_pc, "%d:PM2.5 Ambient: %d\tPM10 Ambient: %d. Checksum: %d\n\r",
                     pm_sensor.probe_count,
                     pm_sensor.PM2_5_amb,
@@ -65,13 +65,13 @@ void pm_sensor_rx_callback()
         } else {
             sprintf(mes_to_pc, "Checksum is not correct.Full Frame;\n\r");
             for (uint16_t i = 0; i < pms_uart.data_length; i++)
-                sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data[i]);
+                sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data_rx[i]);
             sprintf(mes_to_pc, "%s\n\r", mes_to_pc);
         }
     } else{
         sprintf(mes_to_pc, "Full Frame;\n\r");
         for (uint16_t i = 0; i < pms_uart.data_length; i++)
-            sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data[i]);
+            sprintf(mes_to_pc, "%s 0x%02X", mes_to_pc, pms_uart.raw_data_rx[i]);
         sprintf(mes_to_pc, "%s\n\r", mes_to_pc);
     }
     uart_send_message(&PC_COMM_UART, mes_to_pc, pms_uart.name);

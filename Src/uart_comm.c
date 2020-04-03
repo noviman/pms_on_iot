@@ -11,15 +11,17 @@
 
 // Initialize with 0 every elem
 
-uart_struct pc_uart = { .name = "PC_UART" };
-uart_struct pms_uart = { .name = "PMS_UART" };
-uart_struct nb_iot_uart = { .name = "NB-IOT_UART" };
+static uint16_t concatenate_counter = 0;
+uart_struct pc_uart = { .name = "PC_UART", .concatenate_counter = 0};
+uart_struct pms_uart = { .name = "PMS_UART", .concatenate_counter = 0 };
+uart_struct nb_iot_uart = { .name = "NB-IOT_UART", .concatenate_counter = 0 };
 
 void start_dma_uart_rx(void)
 {
-    HAL_UART_Receive_DMA(&PM_SENSOR_UART, pms_uart.raw_data_buffer, UART_RECEIVE_MAX);
-    HAL_UART_Receive_DMA(&PC_COMM_UART, pc_uart.raw_data_buffer, UART_RECEIVE_MAX);
-    HAL_UART_Receive_DMA(&NB_IOT_UART, nb_iot_uart.raw_data_buffer, UART_RECEIVE_MAX);
+    HAL_UART_Receive_DMA(&PM_SENSOR_UART, (uint8_t *) pms_uart.raw_data_rx_buffer, UART_RECEIVE_MAX);
+    HAL_UART_Receive_DMA(&PC_COMM_UART, (uint8_t *) pc_uart.raw_data_rx_buffer, UART_RECEIVE_MAX);
+    HAL_UART_Receive_DMA(&NB_IOT_UART, (uint8_t *) nb_iot_uart.raw_data_rx_buffer, UART_RECEIVE_MAX);
+
 }
 
 HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *message, const char *receiver)
@@ -50,17 +52,17 @@ void IDLE_DETECT_UART_IRQHandler(UART_HandleTypeDef * handle)
         __HAL_UART_CLEAR_IDLEFLAG(handle); // Clear IDLE IT Flag
         if (handle == &PC_COMM_UART)
         {
-            IDLE_UART_Callback(handle, &pc_uart);
+            IDLE_UART_String_Callback(handle, &pc_uart);
         }
 
         else if (handle == &NB_IOT_UART)
         {
-            IDLE_UART_Callback(handle, &nb_iot_uart);
+            IDLE_UART_String_Callback(handle, &nb_iot_uart);
         }
 
         else if (handle == &PM_SENSOR_UART)
         {
-            IDLE_UART_Callback(handle, &pms_uart);
+            IDLE_UART_Raw_Callback(handle, &pms_uart);
         }
         else
         {
@@ -69,15 +71,66 @@ void IDLE_DETECT_UART_IRQHandler(UART_HandleTypeDef * handle)
     }
 }
 
-void IDLE_UART_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct_handle) {
+uint8_t concatenate_message_buffer(uart_struct *uart_struct_handle, uint16_t counter)
+{
+    memcpy(&uart_struct_handle->raw_data_rx[counter],
+            uart_struct_handle->raw_data_rx_buffer,
+            uart_struct_handle->data_length);
+}
+
+void IDLE_UART_Raw_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct_handle)
+{
     HAL_UART_DMAStop(handle);
     uart_struct_handle->data_length = UART_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
-    memset(uart_struct_handle->raw_data, 0, UART_RECEIVE_MAX); // Clear whole buffer
-    memcpy(uart_struct_handle->raw_data, uart_struct_handle->raw_data_buffer, uart_struct_handle->data_length);
-    memset(uart_struct_handle->raw_data_buffer, 0, uart_struct_handle->data_length);
-    HAL_UART_Receive_DMA(handle, uart_struct_handle->raw_data_buffer, UART_RECEIVE_MAX);
+    memset(uart_struct_handle->raw_data_rx, 0, UART_RECEIVE_MAX); // Clear whole buffer
+    concatenate_message_buffer(uart_struct_handle, 0);
+    memset(uart_struct_handle->raw_data_rx_buffer, 0, UART_RECEIVE_MAX); // Clear whole buffer
     uart_struct_handle->rx_flag = 1;
+    HAL_UART_Receive_DMA(handle, (uint8_t *) uart_struct_handle->raw_data_rx_buffer, UART_RECEIVE_MAX);
 }
+/* Characters '/r/n' terminates the string! In case when not spotted, concatenation is performed */
+/* When RX Buffer is longer than UART_RECEIVE_MAX then send message on PC to handle this! */
+void IDLE_UART_String_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct_handle)
+{
+    HAL_UART_DMAStop(handle);
+    uart_struct_handle->data_length = UART_RECEIVE_MAX - __HAL_DMA_GET_COUNTER(handle->hdmarx);
+    if ((uart_struct_handle->data_length + uart_struct_handle->concatenate_counter) >= UART_RECEIVE_MAX) {
+        /* If concatenated buffer is longer. Clear everything and notify user on PC Uart*/
+        sprintf(pc_uart.raw_data_tx_buffer,
+                "RX Buffer exceeds UART_RECEIVE_MAX %d!. Not handling this one!\r\n", UART_RECEIVE_MAX);
+        uart_send_message(&PC_COMM_UART, pc_uart.raw_data_tx_buffer, uart_struct_handle->name);
+        memset(uart_struct_handle->raw_data_rx_buffer, 0, UART_RECEIVE_MAX);
+        memset(uart_struct_handle->raw_data_rx, 0, UART_RECEIVE_MAX);
+        uart_struct_handle->data_length = 0;
+        uart_struct_handle->concatenate_counter = 0;
+        uart_struct_handle->concatenate_counter = 0;
+        HAL_UART_Receive_DMA(handle, (uint8_t *) uart_struct_handle->raw_data_rx_buffer, UART_RECEIVE_MAX);
+        return;
+    }
+    // Clear RX Buffer at the beginning
+    if (0 == uart_struct_handle->concatenate_counter)
+    {
+        memset(uart_struct_handle->raw_data_rx, 0, UART_RECEIVE_MAX); // Clear whole buffer
+    }
+    if (uart_struct_handle->raw_data_rx_buffer[(uart_struct_handle->data_length) - 1] == '\n')
+    {
+        concatenate_message_buffer(uart_struct_handle, uart_struct_handle->concatenate_counter);
+        uart_struct_handle->concatenate_counter += uart_struct_handle->data_length;
+        uart_struct_handle->data_length = uart_struct_handle->concatenate_counter;
+        uart_struct_handle->rx_flag = 1;
+        uart_struct_handle->concatenate_counter = 0;
+
+    }
+    else
+    {
+        concatenate_message_buffer(uart_struct_handle, uart_struct_handle->concatenate_counter);
+        uart_struct_handle->concatenate_counter += uart_struct_handle->data_length;
+    }
+    memset(uart_struct_handle->raw_data_rx_buffer, 0, UART_RECEIVE_MAX);
+    HAL_UART_Receive_DMA(handle, (uint8_t *) uart_struct_handle->raw_data_rx_buffer, UART_RECEIVE_MAX);
+}
+
+
 
 uint8_t send_check_message(UART_HandleTypeDef *handle, const char *mes_send, const char *mes_check,
                            uart_struct *uart_struct_handle, const uint16_t timeout)
@@ -95,8 +148,9 @@ uint8_t send_check_message(UART_HandleTypeDef *handle, const char *mes_send, con
             return 2;
         }
     }
+    uart_struct_handle->tim_counter = 0;
     uart_struct_handle->rx_flag = 0;
-    if(0 != strcmp( remove_req_from_read( (char *)uart_struct_handle->raw_data), mes_check) )
+    if(0 != strcmp(remove_req_from_read( (char *)uart_struct_handle->raw_data_rx), mes_check) )
     {
         return 0;
     }
@@ -105,4 +159,3 @@ uint8_t send_check_message(UART_HandleTypeDef *handle, const char *mes_send, con
         return 1;
     }
 }
-
