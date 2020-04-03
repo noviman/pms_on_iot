@@ -28,7 +28,7 @@ HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *handle, const char *mess
 {
     size_t length = 0;
 //    while(__HAL_DMA_GET_COUNTER(handle->hdmatx) != 0) { }
-    while(handle->gState == HAL_UART_STATE_BUSY_TX) { }  // Prevent from corrupting TX Messages
+    while(handle->gState != HAL_UART_STATE_READY) { }  // Prevent from corrupting TX Messages
     if (handle == &PC_COMM_UART)
     {
         char message_to_pc[UART_TRANSMIT_MAX] = { 0 };
@@ -88,7 +88,7 @@ void IDLE_UART_Raw_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct
     uart_struct_handle->rx_flag = 1;
     HAL_UART_Receive_DMA(handle, (uint8_t *) uart_struct_handle->raw_data_rx_buffer, UART_RECEIVE_MAX);
 }
-/* Characters '/r/n' terminates the string! In case when not spotted, concatenation is performed */
+/* Character '/n' terminates the string! In case when not spotted, concatenation is performed */
 /* When RX Buffer is longer than UART_RECEIVE_MAX then send message on PC to handle this! */
 void IDLE_UART_String_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct_handle)
 {
