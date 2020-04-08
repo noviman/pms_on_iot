@@ -9,6 +9,8 @@
 
 #define MAX_FRAME_LEN 32
 
+extern const char TAG[10];
+extern const uint8_t PM_SEND_TO_IOT;
 typedef struct PMS7003_struct {
     uint8_t  frameHeader[2];
     uint16_t frameLen;
@@ -36,9 +38,11 @@ extern uint8_t pm_sensor_changeM_active[4];
 extern uint8_t pm_sensor_changeSt_sleep[4];
 extern uint8_t pm_sensor_changeSt_wakeup[4];
 extern uint8_t pm_sensor_req_read[4];
+extern uint8_t pm_sensor_changeSt_wakeup_standby[4];
 
 uint8_t pm_sensor_update_data(const uint8_t *);
 uint16_t pm_sensor_validate_checksum(const uint8_t *);
 void pm_sensor_rx_callback();
+void pm_sensor_read_cycl();
 void pm_sensor_host_tx(const uint8_t *);
 #endif //SENSOR_PM_PMS7003_H

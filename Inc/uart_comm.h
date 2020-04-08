@@ -34,8 +34,8 @@ extern uart_struct nb_iot_uart;
 void start_dma_uart_rx(void);
 
 HAL_StatusTypeDef uart_send_message(UART_HandleTypeDef *, const char *, const char *);
-uint8_t send_check_message(UART_HandleTypeDef *, const char *, const char *,
-                           uart_struct *, const uint16_t );
+uint8_t send_check_message(UART_HandleTypeDef *handle, const char *mes_send, const char *mes_check,
+                           uart_struct *uart_struct_handle, const uint8_t mes_consistency, const uint16_t timeout);
 // Idle Detection
 void IDLE_DETECT_UART_IRQHandler(UART_HandleTypeDef *);
 void IDLE_UART_String_Callback(UART_HandleTypeDef *handle, uart_struct *uart_struct_handle);

@@ -4,6 +4,11 @@
 
 #include "pms7003.h"
 #include "uart_comm.h"
+#include "nb_iot.h"
+
+const char TAG[10] = "PMS7003";
+// Turn this flag to 0 if dont want to send to IOT
+const uint8_t PM_SEND_TO_IOT = 1;
 
 uint8_t pm_sensor_tx_frame[7] = {0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00};
 // Last Byte decides if Answer is expected
@@ -11,6 +16,7 @@ uint8_t pm_sensor_changeM_passive[4] = {0xE1, 0x00, 0x00, 0x01};
 uint8_t pm_sensor_changeM_active[4] = {0xE1, 0x00, 0x01, 0x01};
 uint8_t pm_sensor_changeSt_sleep[4] = {0xE4, 0x00, 0x00, 0x01};
 uint8_t pm_sensor_changeSt_wakeup[4] = {0xE4, 0x00, 0x01, 0x00};
+uint8_t pm_sensor_changeSt_wakeup_standby[4] = {0xE4, 0x00, 0x01, 0x01};
 uint8_t pm_sensor_req_read[4] = {0xE2, 0x00, 0x01, 0x00};
 
 static PMS7003_struct pm_sensor = { }; // Initialize with 0 every elem
@@ -62,6 +68,10 @@ void pm_sensor_rx_callback()
                     pm_sensor.PM2_5_amb,
                     pm_sensor.PM10_0_amb,
                     pm_sensor.checksum);
+            if(PM_SEND_TO_IOT == 1)
+            {
+                pm_sensor_read_cycl();
+            }
         } else {
             sprintf(mes_to_pc, "Checksum is not correct.Full Frame;\n\r");
             for (uint16_t i = 0; i < pms_uart.data_length; i++)
@@ -94,4 +104,13 @@ void pm_sensor_host_tx(const uint8_t * frame)
 
     // Transmit Message
     HAL_UART_Transmit_DMA(&PM_SENSOR_UART, pm_sensor_tx_frame, 7);
+}
+
+void pm_sensor_read_cycl()
+{
+    char message[NB_IOT_MAX];
+    sprintf(message, "{\"k\":\"%s\",\"d\":\"PM2.5:%d;PM10:%d\",\"t\":\"%s\"}\r\n", DEVICE_KEY, pm_sensor.PM2_5_amb,
+            pm_sensor.PM10_0_amb, TAG);
+    nb_send_message(message);
+
 }

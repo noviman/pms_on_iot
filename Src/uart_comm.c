@@ -13,7 +13,7 @@
 
 static uint16_t concatenate_counter = 0;
 uart_struct pc_uart = { .name = "PC_UART", .concatenate_counter = 0};
-uart_struct pms_uart = { .name = "PMS_UART", .concatenate_counter = 0 };
+uart_struct pms_uart = { .name = "PMS_UART", .concatenate_counter = 0};
 uart_struct nb_iot_uart = { .name = "NB-IOT_UART", .concatenate_counter = 0 };
 
 void start_dma_uart_rx(void)
@@ -130,10 +130,11 @@ void IDLE_UART_String_Callback(UART_HandleTypeDef *handle, uart_struct *uart_str
     HAL_UART_Receive_DMA(handle, (uint8_t *) uart_struct_handle->raw_data_rx_buffer, UART_RECEIVE_MAX);
 }
 
-
-
+// Mes_consistency
+// Expected = 0
+// Not expected = 1
 uint8_t send_check_message(UART_HandleTypeDef *handle, const char *mes_send, const char *mes_check,
-                           uart_struct *uart_struct_handle, const uint16_t timeout)
+                           uart_struct *uart_struct_handle, const uint8_t mes_consistency, const uint16_t timeout)
 {
     if(1 == uart_struct_handle->rx_flag)
     {
@@ -150,12 +151,14 @@ uint8_t send_check_message(UART_HandleTypeDef *handle, const char *mes_send, con
     }
     uart_struct_handle->tim_counter = 0;
     uart_struct_handle->rx_flag = 0;
+    memset(uart_struct_handle->raw_data_tx_buffer, 0, UART_TRANSMIT_MAX);
+    /* EXOR Mes_Consistency && ret */
     if(0 != strcmp(remove_req_from_read( (char *)uart_struct_handle->raw_data_rx), mes_check) )
     {
-        return 0;
+        return 0 ^ mes_consistency;
     }
     else
     {
-        return 1;
+        return 1 ^ mes_consistency;
     }
 }

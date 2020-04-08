@@ -8,6 +8,7 @@
 #include "nb_iot.h"
 #include "helpers.h"
 
+
 void pc_comm_rx_callback()
 {
     pc_uart.rx_flag = 0;
@@ -22,6 +23,10 @@ uint8_t pms_commands(const char * command)
     else if ( 0 == strcmp(command, "WAKEUP") )
     {
         pm_sensor_host_tx(pm_sensor_changeSt_wakeup);
+    }
+    else if ( 0 == strcmp(command, "WAKEUPSTB") )
+    {
+        pm_sensor_host_tx(pm_sensor_changeSt_wakeup_standby);
     }
     else if ( 0 == strcmp(command, "ACTIVE") )
     {
@@ -91,6 +96,18 @@ uint8_t nb_commands(const char * command)
     else if ( 0 == strcmp(command, "CREG") )
     {
         nb_check_register();
+        return 1;
+    }
+    else if ( 0 == strcmp(command, "OPENCONN") )
+    {
+        nb_open_connection();
+        return 1;
+    }
+    else if ( 0 == strcmp(command, "SENDMESSAGE") )
+    {
+        char message[100];
+        sprintf(message, "{\"k\":\"%s\",\"d\":\"RazDwaTri\",\"t\":\"%s\"}\r\n", DEVICE_KEY, TAG);
+        nb_send_message(message);
         return 1;
     }
     else if( (command[0] == 'A' && command[1] == 'T' && command[2] == ';') )
