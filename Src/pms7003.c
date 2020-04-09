@@ -7,8 +7,10 @@
 #include "nb_iot.h"
 
 const char TAG[10] = "PMS7003";
+const uint8_t PM_MAX_COUNT_READ = 10;
 // Turn this flag to 0 if dont want to send to IOT
 const uint8_t PM_SEND_TO_IOT = 1;
+volatile uint8_t pm_ready_to_nb_transmit_flag = 0;
 
 uint8_t pm_sensor_tx_frame[7] = {0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00};
 // Last Byte decides if Answer is expected
@@ -108,9 +110,20 @@ void pm_sensor_host_tx(const uint8_t * frame)
 
 void pm_sensor_read_cycl()
 {
-    char message[NB_IOT_MAX];
-    sprintf(message, "{\"k\":\"%s\",\"d\":\"PM2.5:%d;PM10:%d\",\"t\":\"%s\"}\r\n", DEVICE_KEY, pm_sensor.PM2_5_amb,
-            pm_sensor.PM10_0_amb, TAG);
-    nb_send_message(message);
+    if(pm_sensor.probe_count >= PM_MAX_COUNT_READ)
+    {
+        pm_ready_to_nb_transmit_flag = 1;
+        pm_sensor.probe_count = 0;
+        pm_sensor_host_tx(pm_sensor_changeSt_sleep);
+    }
 
+}
+
+void pm_sensor_transmit_callback()
+{
+    char message[100];
+    pm_ready_to_nb_transmit_flag = 0;
+    sprintf(message, "{\"k\":\"%s\",\"d\":\"PM2.5:%d;PM10:%d\",\"t\":\"%s\"}\r\n", DEVICE_KEY, pm_sensor.PM2_5_amb,
+    pm_sensor.PM10_0_amb, TAG);
+    nb_send_message(message);
 }

@@ -116,6 +116,7 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim3);
   start_dma_uart_rx();
 
+  nb_make_standard_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -133,6 +134,9 @@ int main(void)
 
     if (nb_iot_uart.rx_flag)
         nb_iot_rx_callback();
+
+    if (pm_ready_to_nb_transmit_flag)
+        pm_sensor_transmit_callback();
 
   }
   /* USER CODE END 3 */

@@ -11,6 +11,7 @@
 
 extern const char TAG[10];
 extern const uint8_t PM_SEND_TO_IOT;
+extern volatile uint8_t pm_ready_to_nb_transmit_flag;
 typedef struct PMS7003_struct {
     uint8_t  frameHeader[2];
     uint16_t frameLen;
@@ -44,5 +45,6 @@ uint8_t pm_sensor_update_data(const uint8_t *);
 uint16_t pm_sensor_validate_checksum(const uint8_t *);
 void pm_sensor_rx_callback();
 void pm_sensor_read_cycl();
+void pm_sensor_transmit_callback();
 void pm_sensor_host_tx(const uint8_t *);
 #endif //SENSOR_PM_PMS7003_H
