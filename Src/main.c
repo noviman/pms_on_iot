@@ -16,6 +16,8 @@
   *
   ******************************************************************************
   */
+// TODO Make Timer to handle startup of Nb-IOT Module, then init
+//  - Handle some more error from nb-iot to improve self-reliability
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -115,8 +117,9 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim3);
   start_dma_uart_rx();
-
-  nb_make_standard_init();
+//  nb_make_standard_init();
+ // Set Timeout before init will happen
+//  nb_iot_uart.tim_counter = 10000;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -138,6 +141,11 @@ int main(void)
     if (pm_ready_to_nb_transmit_flag)
         pm_sensor_transmit_callback();
 
+    if (nb_tim_flag)
+    {
+        nb_tim_flag = 0;
+        nb_make_settings_validate();
+    }
   }
   /* USER CODE END 3 */
 }

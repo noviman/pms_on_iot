@@ -6,11 +6,90 @@
 #include "string.h"
 #include "stdlib.h"
 
+
 const char DEVICE_KEY[10] = "L^R<8oyf";
+volatile uint16_t nb_iot_state = 0;
+volatile uint8_t nb_tim_flag = 0;
 
 void nb_iot_rx_callback() {
     nb_iot_uart.rx_flag = 0;
     uart_send_message(&PC_COMM_UART, nb_iot_uart.raw_data_rx, nb_iot_uart.name);
+}
+
+uint8_t nb_make_settings_validate()
+{
+    if(0 == (nb_iot_state & SIM_READINESS) )
+    {
+        uint8_t sim_tries = 0;
+        const uint8_t MAX_SIM_TRIES = 3;
+        while (sim_tries < MAX_SIM_TRIES) {
+            sim_tries += 1;
+            if (1 == nb_check_sim_status()) {
+                break;
+            }
+            if (sim_tries == MAX_SIM_TRIES)
+                return 0;
+        }
+        HAL_Delay(100);
+    }
+
+    if(0 == (nb_iot_state & MODE) )
+    {
+        nb_set_mode(38);
+        HAL_Delay(100);
+    }
+
+    if(0 == (nb_iot_state & MODE_SELECTION) )
+    {
+        nb_set_mode_selection(3);
+        HAL_Delay(100);
+    }
+
+
+    if(0 == (nb_iot_state & DEVICE_CONNECTION) )
+    {
+        // Shut PDP Context
+        nb_deactivate_gprs_pdp_context();
+        HAL_Delay(100);
+
+        nb_check_device_connection();
+        HAL_Delay(100);
+    }
+
+    if(0 == (nb_iot_state & APN) )
+    {
+        nb_set_apn();
+        HAL_Delay(100);
+    }
+
+    if(0 == (nb_iot_state & IP_APN) )
+    {
+        nb_set_ip_apn("1,\"IP\",\"hologram\"");
+        HAL_Delay(100);
+    }
+
+    if(0 == (nb_iot_state & NETWORK) )
+    {
+        nb_set_network("1,2,\"26003\",7");
+        HAL_Delay(100);
+    }
+
+    if(0 == (nb_iot_state & BRING_CSD_CONN) )
+    {
+        nb_bring_up_csd_connection();
+        HAL_Delay(100);
+    }
+
+    if(0 == (nb_iot_state & GET_IP) )
+    {
+        nb_get_ip();
+        HAL_Delay(100);
+    }
+
+    if(nb_iot_state & IOT_ALL)
+    {
+        nb_iot_state |= IOT_READY;
+    }
 }
 
 uint8_t nb_make_standard_init() {
@@ -37,7 +116,7 @@ uint8_t nb_make_standard_init() {
     if (0 == nb_check_device_connection()) {
         HAL_Delay(100);
         // If Status NOK, try to Shut PDP Context
-        if (0 == nb_deactivate__gprs_pdp_context())
+        if (0 == nb_deactivate_gprs_pdp_context())
             return 0;
         HAL_Delay(100);
         // Second Try
@@ -76,6 +155,7 @@ uint8_t nb_check_sim_status() {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= SIM_READINESS;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -105,6 +185,7 @@ uint8_t nb_set_mode(const uint8_t mode) {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= MODE;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -132,6 +213,7 @@ uint8_t nb_set_mode_selection(const uint8_t mode) {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= MODE_SELECTION;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -154,6 +236,7 @@ uint8_t nb_check_device_connection() {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= DEVICE_CONNECTION;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -165,7 +248,7 @@ uint8_t nb_check_device_connection() {
     return 0;
 }
 
-uint8_t nb_deactivate__gprs_pdp_context() {
+uint8_t nb_deactivate_gprs_pdp_context() {
     uint8_t error_handler;
     uart_send_message(&PC_COMM_UART, "Shutting down GPRS PDP Context\r\n", nb_iot_uart.name);
     sprintf(nb_iot_uart.raw_data_tx_buffer, "AT+CIPSHUT\r\n");
@@ -197,6 +280,7 @@ uint8_t nb_set_network(const char *network) {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= NETWORK;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -218,6 +302,7 @@ uint8_t nb_set_ip_apn(const char *apn) {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= IP_APN;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -240,6 +325,7 @@ uint8_t nb_set_apn() {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= APN;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -262,6 +348,7 @@ uint8_t nb_bring_up_csd_connection() {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= BRING_CSD_CONN;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];
@@ -284,6 +371,7 @@ uint8_t nb_get_ip() {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
         uart_send_message(&PC_COMM_UART, message, nb_iot_uart.name);
+        nb_iot_state |= GET_IP;
         return 1;
     } else if (0 == error_handler) {
         char message[UART_TRANSMIT_MAX];

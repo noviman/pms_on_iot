@@ -8,7 +8,6 @@
 #include "nb_iot.h"
 #include "helpers.h"
 
-
 void pc_comm_rx_callback()
 {
     pc_uart.rx_flag = 0;
@@ -55,7 +54,8 @@ uint8_t nb_commands(const char * command)
     }
     else if ( 0 == strcmp(command, "INIT") )
     {
-        nb_make_standard_init();
+//        nb_make_standard_init();
+        nb_make_settings_validate();
         return 1;
     }
     else if ( 0 == strcmp(command, "SETMODE") )
@@ -75,7 +75,7 @@ uint8_t nb_commands(const char * command)
     }
     else if ( 0 == strcmp(command, "PDPDEACT") )
     {
-        nb_deactivate__gprs_pdp_context();
+        nb_deactivate_gprs_pdp_context();
         return 1;
     }
     else if ( 0 == strcmp(command, "SETAPN") )

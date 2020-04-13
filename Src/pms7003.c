@@ -124,6 +124,6 @@ void pm_sensor_transmit_callback()
     char message[100];
     pm_ready_to_nb_transmit_flag = 0;
     sprintf(message, "{\"k\":\"%s\",\"d\":\"PM2.5:%d;PM10:%d\",\"t\":\"%s\"}\r\n", DEVICE_KEY, pm_sensor.PM2_5_amb,
-    pm_sensor.PM10_0_amb, TAG);
+            pm_sensor.PM10_0_amb, TAG);
     nb_send_message(message);
 }
