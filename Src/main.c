@@ -117,6 +117,7 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim3);
   start_dma_uart_rx();
+  pm_sensor_host_tx(pm_sensor_changeSt_sleep);
 //  nb_make_standard_init();
  // Set Timeout before init will happen
 //  nb_iot_uart.tim_counter = 10000;

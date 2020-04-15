@@ -1,3 +1,14 @@
 {
-    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools"
+    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
+    "stm32-for-vscode.openocdPath": "openocd",
+    "cortex-debug.openocdPath": "openocd",
+    "stm32-for-vscode.makePath": "make",
+    "stm32-for-vscode.armToolchainPath": "",
+    "cortex-debug.armToolchainPath": "",
+    "files.associations": {
+        "stdlib.h": "c",
+        "uart_comm.h": "c",
+        "nb_iot.h": "c",
+        "system_error": "c"
+    }
 }

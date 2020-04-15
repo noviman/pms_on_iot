@@ -54,7 +54,7 @@ uint8_t nb_commands(const char * command)
     }
     else if ( 0 == strcmp(command, "INIT") )
     {
-//        nb_make_standard_init();
+    //    nb_make_standard_init();
         nb_make_settings_validate();
         return 1;
     }

@@ -5,6 +5,8 @@
 #include "pms7003.h"
 #include "uart_comm.h"
 #include "nb_iot.h"
+#include <string.h>
+// TODO string.h to remove after refactor of nb_send_message and add queue
 
 const char TAG[10] = "PMS7003";
 const uint8_t PM_MAX_COUNT_READ = 10;
@@ -121,9 +123,9 @@ void pm_sensor_read_cycl()
 
 void pm_sensor_transmit_callback()
 {
-    char message[100];
     pm_ready_to_nb_transmit_flag = 0;
-    sprintf(message, "{\"k\":\"%s\",\"d\":\"PM2.5:%d;PM10:%d\",\"t\":\"%s\"}\r\n", DEVICE_KEY, pm_sensor.PM2_5_amb,
+    memset(pms_uart.raw_data_tx_buffer, 0, UART_TRANSMIT_MAX);
+    sprintf(pms_uart.raw_data_tx_buffer, "{\"k\":\"%s\",\"d\":\"PM2.5:%d;PM10:%d\",\"t\":\"%s\"}\r\n", DEVICE_KEY, pm_sensor.PM2_5_amb,
             pm_sensor.PM10_0_amb, TAG);
-    nb_send_message(message);
+    nb_send_message(pms_uart.raw_data_tx_buffer);
 }

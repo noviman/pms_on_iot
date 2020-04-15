@@ -415,7 +415,7 @@ uint8_t nb_open_connection()
     uart_send_message(&PC_COMM_UART, "Opening connection...\r\n", nb_iot_uart.name);
     sprintf(nb_iot_uart.raw_data_tx_buffer, "AT+CIPSTART=\"%s\",\"%s\",%d\r\n", type, host, port);
     error_handler = send_check_message(&NB_IOT_UART, nb_iot_uart.raw_data_tx_buffer, "OK\r\n", &nb_iot_uart,
-                                       Message_Expected, 300);
+                                       Message_Expected, 1500);
     if (1 == error_handler) {
         char message[UART_TRANSMIT_MAX];
         sprintf(message, "[CMD_RX_OK]%s", nb_iot_uart.raw_data_rx);
@@ -461,8 +461,9 @@ uint8_t nb_send_message(const char *message)
             return 2;
         }
     }
-    memset(nb_iot_uart.raw_data_tx_buffer, 0, UART_TRANSMIT_MAX);
-    sprintf(nb_iot_uart.raw_data_tx_buffer, "%s", message);
+    // memset(nb_iot_uart.raw_data_tx_buffer, 0, UART_TRANSMIT_MAX);
+    // sprintf(nb_iot_uart.raw_data_tx_buffer, "%s", message);
+    memcpy(nb_iot_uart.raw_data_tx_buffer, message, strlen(message));
     uart_send_message(&NB_IOT_UART, nb_iot_uart.raw_data_tx_buffer, NULL);
 
 }
